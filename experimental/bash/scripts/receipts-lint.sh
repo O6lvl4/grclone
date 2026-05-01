@@ -21,13 +21,21 @@ out=$(find . -maxdepth 1 -type f ! -name '.*' | sed 's|^\./||' | grep -vE '^[0-9
 [ -n "$out" ] && echo "$out" | sed 's/^/  /' || echo "  (none)"
 echo
 
-bold "[2] 二重日付（YYYYMMDD が2回以上出現）"
-out=$(find . -maxdepth 1 -type f ! -name '.*' | sed 's|^\./||' | awk '{n=gsub(/[0-9]{8}/,"&"); if(n>=2) print}' || true)
+bold "[2] 冗長な二重日付（期間/IDを除く）"
+out=$(find . -maxdepth 1 -type f ! -name '.*' | sed 's|^\./||' | awk '{
+  s = $0
+  gsub(/[0-9]{8}-[0-9]{8}/, "", s)        # 期間: YYYYMMDD-YYYYMMDD
+  gsub(/[0-9]{8}_to_[0-9]{8}/, "", s)     # 期間: YYYYMMDD_to_YYYYMMDD
+  gsub(/[0-9]{4}-[0-9]{2}-[0-9]{2}/, "", s)  # 単独 YYYY-MM-DD
+  gsub(/#[0-9]+-[0-9]+/, "", s)           # Paddle Order ID
+  n = gsub(/[0-9]{8}/, "", s)
+  if (n >= 2) print
+}' || true)
 [ -n "$out" ] && echo "$out" | sed 's/^/  /' || echo "  (none)"
 echo
 
-bold "[3] コピー痕跡（のコピー / [N] / (N) / -00N）"
-out=$(find . -maxdepth 1 -type f ! -name '.*' | sed 's|^\./||' | grep -E 'のコピー|\[[0-9]+\]| \([0-9]+\)|-00[0-9]' || true)
+bold "[3] コピー痕跡（のコピー / [N] / (N)）"
+out=$(find . -maxdepth 1 -type f ! -name '.*' | sed 's|^\./||' | grep -E 'のコピー|\[[0-9]+\]| \([0-9]+\)' || true)
 [ -n "$out" ] && echo "$out" | sed 's/^/  /' || echo "  (none)"
 echo
 

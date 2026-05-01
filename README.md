@@ -64,6 +64,8 @@ once to set it up).
 
 ## Use
 
+### Sync
+
 ```sh
 grclone status      # what's different?
 grclone pull        # remote → local (mirror)
@@ -80,18 +82,33 @@ grclone resync      # establishes the baseline; required once
 grclone sync        # routine two-way sync afterwards
 ```
 
+### Receipts
+
+Lint and canonicalize receipt-file names (Japanese-bookkeeping focused, but
+the rules are configurable).
+
+```sh
+grclone receipts lint     # report naming-rule violations
+grclone receipts plan     # show proposed renames (no writes)
+grclone receipts apply    # execute the renames
+```
+
+Default directory is `~/Downloads/経理/領収書`. Override with `--dir` or
+`$GRCLONE_RECEIPTS_DIR`. The vendor-normalization map is embedded
+(`internal/receipts/vendors.tsv`).
+
 ## Roadmap
 
-- [ ] `receipts lint` — flag receipt-file naming violations
-- [ ] `receipts plan` / `receipts apply` — propose & execute renames
+- [x] `receipts lint / plan / apply`
 - [ ] PDF metadata extraction (vendor / amount / date) via `pdftotext`
 - [ ] CSV reconciliation: match credit-card statements against receipts
+- [ ] Configurable vendor map (load external `vendors.tsv`)
 - [ ] Direct rclone library integration (drop the `exec` boundary)
 - [ ] Homebrew tap
 
-A bash-and-Makefile prototype of these features lives under
-[`experimental/bash/`](experimental/bash). Treat it as a reference, not as
-shipped functionality.
+A bash-and-Makefile prototype lives under
+[`experimental/bash/`](experimental/bash) as the original reference
+implementation. The Go CLI is now the source of truth.
 
 ## License
 
