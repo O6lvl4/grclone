@@ -17,6 +17,8 @@ normalize() {
   n="${n//｜/_}"
   n="${n//－/-}"
   n="${n//–/-}"
+  n="${n//（/_}"
+  n="${n//）/_}"
   n=$(printf '%s' "$n" | sed -E 's/\[[0-9]+\]//g')
   n=$(printf '%s' "$n" | sed -E 's/ \(([0-9]+)\)/_v\1/g')
   n="${n// /_}"
@@ -35,8 +37,20 @@ extract_date() {
 
 strip_noise_words() {
   local n="$1"
-  n=$(printf '%s' "$n" | sed -E 's/(^|_)(領収書|receipt|Receipt)(_|$)/\1\3/g')
+  local i
+  for i in 1 2 3; do
+    # receipt/Receipt は _ 区切りのみ（Receipt-XXXX は識別子）
+    n=$(printf '%s' "$n" | sed -E 's/(^|_)(receipt|Receipt)(_|$)/\1\3/g')
+    # その他は _ も - も区切りとして扱う
+    n=$(printf '%s' "$n" | sed -E 's/(^|[_-])(領収書|Your|your|Order|order)([_-]|$)/\1\3/g')
+  done
   n=$(printf '%s' "$n" | sed -E 's/_+/_/g; s/^_//; s/_$//')
+  printf '%s' "$n"
+}
+
+cleanup_seps() {
+  local n="$1"
+  n=$(printf '%s' "$n" | sed -E 's/_-_/_/g; s/_-/_/g; s/-_/-/g; s/_+/_/g; s/^[_-]+//; s/[_-]+$//; s/_\./\./g')
   printf '%s' "$n"
 }
 
@@ -70,14 +84,12 @@ while IFS= read -r f; do
 
   rest="$norm"
   rest=$(printf '%s' "$rest" | sed -E 's/^[0-9]{8}_?//')
-  rest=$(printf '%s' "$rest" | sed -E 's/_?[0-9]{8}_?/_/g')
-  rest=$(printf '%s' "$rest" | sed -E 's/_?[0-9]{4}-[0-9]{2}-[0-9]{2}_?/_/g')
-  rest=$(printf '%s' "$rest" | sed -E 's/_+/_/g; s/^_//; s/_$//')
+  rest=$(cleanup_seps "$rest")
 
   if lookup_vendor "$rest"; then
     rest="${rest//"$vendor_match"/}"
     rest=$(strip_noise_words "$rest")
-    rest=$(printf '%s' "$rest" | sed -E 's/_+/_/g; s/^_//; s/_$//')
+    rest=$(cleanup_seps "$rest")
     if [ -n "$rest" ]; then
       new="${date_p}_${vendor_canon}_${rest}.${ext}"
     else
@@ -85,10 +97,11 @@ while IFS= read -r f; do
     fi
   else
     rest=$(strip_noise_words "$rest")
+    rest=$(cleanup_seps "$rest")
     new="${date_p}_${rest}.${ext}"
   fi
 
-  new=$(printf '%s' "$new" | sed -E 's/_+/_/g; s/_\./\./g; s/^_//')
+  new=$(cleanup_seps "$new")
 
   if [ "$f" != "$new" ]; then
     printf '%s\t%s\n' "$f" "$new" >> "$PLAN"
