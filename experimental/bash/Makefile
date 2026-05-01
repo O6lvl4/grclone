@@ -3,11 +3,7 @@ REMOTE ?= gdrive:
 RCLONE ?= rclone
 BISYNC_LOG := $(HOME)/Library/Caches/rclone/bisync
 
-RECEIPTS_DIR ?= $(HOME)/Downloads/経理/領収書
-RECEIPTS_PLAN ?= /tmp/receipts-rename-plan.tsv
-
-.PHONY: help status fetch diff pull push sync resync dry-pull dry-push dry-sync log clean-lock \
-        receipts-lint receipts-plan receipts-apply
+.PHONY: help status fetch diff pull push sync resync dry-pull dry-push dry-sync log clean-lock
 
 help: ## ヘルプ表示
 	@awk 'BEGIN{FS=":.*## "} /^[a-zA-Z_-]+:.*## / {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -53,12 +49,3 @@ log: ## 直近の bisync ログ
 
 clean-lock: ## bisync のロックファイル削除（異常終了時のリカバリ）
 	rm -f $(BISYNC_LOG)/*.lck && echo "lock removed"
-
-receipts-lint: ## 領収書ディレクトリのlint（命名規則違反検出）
-	@RECEIPTS_DIR="$(RECEIPTS_DIR)" bash scripts/receipts-lint.sh "$(RECEIPTS_DIR)"
-
-receipts-plan: ## 領収書のリネーム案を生成（TSV出力、書き込みなし）
-	@RECEIPTS_DIR="$(RECEIPTS_DIR)" RECEIPTS_PLAN="$(RECEIPTS_PLAN)" bash scripts/receipts-rename-plan.sh
-
-receipts-apply: ## TSVを基にリネーム実行（plan後に目視レビュー必須）
-	@RECEIPTS_DIR="$(RECEIPTS_DIR)" RECEIPTS_PLAN="$(RECEIPTS_PLAN)" bash scripts/receipts-rename-apply.sh
